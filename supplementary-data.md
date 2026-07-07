@@ -1,6 +1,7 @@
-# Supplementary Data — An Open DevOps Automation System for Continuous Secure Software Delivery
+# Supplementary Data
 
-Supplementary evidence supporting the CI/CD KPI claims in the IC3 2026 paper. Referenced from the manuscript as `[Online]. Available: <repo-url>/supplementary-data.md`.
+**Paper:** An Open DevOps Automation System for Continuous Secure Software Delivery (IC3 2026)
+
 
 ---
 
@@ -15,8 +16,6 @@ Supplementary evidence supporting the CI/CD KPI claims in the IC3 2026 paper. Re
 | Version tagged | `0.1.0` — 3 Jul 2026, 10:00 AM |
 | Snapshot version | `0.1.0-SNAPSHOT` — 3 Jul 2026, 6:40 PM |
 | Reduction | ~100% of tracked issues resolved between baseline and 0.1.0 release |
-
-**Interpretation for paper:** Demonstrates sustained downward trend in static analysis findings across the pipeline's operational period, supporting the "improved code quality" KPI via automated SAST gating.
 
 ---
 
@@ -36,16 +35,14 @@ Supplementary evidence supporting the CI/CD KPI claims in the IC3 2026 paper. Re
 | Last BOM import | 3 Jul 2026, 18:40:19 |
 | Last vulnerability analysis | 6 Jul 2026, 17:36:32 |
 | Last measurement | 7 Jul 2026, 16:36:38 |
-| Audit vulnerabilities tracked | 2 (2 flagged for audit) |
+| Audit vulnerabilities tracked | 2 |
 | Policy violations | 0 |
-
-**Interpretation for paper:** Confirms continuous SBOM-driven vulnerability tracking (CycloneDX → Dependency-Track) is operating on every build, with near-zero unresolved critical/high findings — supports the "automated dependency vulnerability detection" KPI.
 
 ---
 
 ## 3. Runner-Level Resource Utilization
 
-**Method:** `docker stats` sampled at 2-second intervals across full execution window; job-to-stage correlation via exact match of `started_at`/`finished_at` from GitLab Jobs API. Runner configured with `concurrent=16`. CPU reported both per-core-normalized (Docker convention, 100% = 1 core) and host-normalized (÷96 cores).
+**Method:** `docker stats` sampled at 2-second intervals across the full execution window; job-to-stage correlation performed via exact match of `started_at`/`finished_at` timestamps from the GitLab Jobs API. Runner configured with `concurrent=16`. CPU is reported both per-core-normalized (Docker convention, 100% = 1 core) and host-normalized (÷96 cores).
 
 ### Table VI — TSP-Web Pipeline (#9559, main branch, N=9 jobs)
 
@@ -62,33 +59,32 @@ Supplementary evidence supporting the CI/CD KPI claims in the IC3 2026 paper. Re
 | dast-scan | owasp-zap-full-scan | 59.1 | 255.3 / 1407.8 | 2.66 / 14.66 | 2.06 GiB / 5.33 GiB |
 | deploy | deploy-trigger (bridge, server-side) | 5.6 | N/A | N/A | N/A |
 
-- **Peak consumers:** `sonarqube_analysis` (4.53 GiB) and `owasp-zap-full-scan` (5.33 GiB, 1407.8% CPU) — both JVM-based, consistent with expected tool behavior.
-- **Total pipeline duration:** 17:38:08–17:54:02 (~15.9 minutes).
+Peak resource consumers were `sonarqube_analysis` (4.53 GiB) and `owasp-zap-full-scan` (5.33 GiB, 1407.8% CPU), both JVM-based tools. Total pipeline duration: 17:38:08–17:54:02 (~15.9 minutes).
 
 ### Table VII — TSP-Deps Pipeline (#9562, dev branch, downstream trigger)
 
 | Stage | Job | Duration (s) | CPU % mean/peak | Mem mean/peak | Attribution confidence |
 |---|---|---|---|---|---|
-| package | package-helm | 9.1 | — | — | Not captured — logger init gap (disclosed limitation) |
+| package | package-helm | 9.1 | — | — | Not captured — logger initialization gap |
 | deploy | deploy-dev | 90.1 | 1.3 / 23.6 | 124.2 / 129.9 MiB | High — uniquely longest-duration match |
-| deploy | deploy-test + deploy-release (combined) | 63.2–63.3 | 1.4–36.5 mean / 14.4–296.6 peak (range across both) | 74–83 MiB | Cannot individually distinguish — near-identical durations (63.3s / 63.2s), no timing signal separates them |
+| deploy | deploy-test + deploy-release (combined) | 63.2–63.3 | 1.4–36.5 mean / 14.4–296.6 peak (range across both) | 74–83 MiB | Cannot be individually distinguished — near-identical durations, no timing signal separates them |
 
-**Limitations (for paper's threats-to-validity / limitations section):**
-1. `package-helm` resource profile not captured due to a logger initialization gap.
-2. `deploy-test` and `deploy-release` ran concurrently with near-identical durations; container-level data alone cannot unambiguously attribute metrics between them — reported as a combined range instead of per-job figures. This is a limitation of the correlation method, not the underlying measurement.
-3. Short-duration jobs (`header_quality_check`, `dependency-track-upload`) are represented by only 1–2 samples at the 2s polling interval; true peaks may exceed reported values.
+**Limitations:**
+1. `package-helm` resource profile was not captured due to a logger initialization gap.
+2. `deploy-test` and `deploy-release` executed concurrently with near-identical durations (63.3s and 63.2s); container-level data alone does not permit unambiguous attribution between them, and results are reported as a combined range rather than per-job figures.
+3. Short-duration jobs (`header_quality_check`, `dependency-track-upload`) are represented by only 1–2 samples at the 2-second polling interval; true peak values may exceed those reported here.
 
 **Column definitions:**
-- *Duration (s)*: wall-clock time (`finished_at − started_at` from GitLab Jobs API); elapsed real time, not CPU time.
-- *CPU % mean/peak (per-core)*: Docker's native convention (100% = one saturated core); values >100% indicate multi-core usage (e.g., 1711.2% ≈ 17 cores at that instant).
-- *CPU % mean/peak (host-normalized)*: same values ÷ 96 host cores, expressed as fraction of total host capacity.
-- *Mem mean/peak*: Docker-reported resident memory, averaged/peaked across all samples during job lifetime.
+- *Duration (s)*: wall-clock time (`finished_at − started_at`, GitLab Jobs API); elapsed real time, not CPU time.
+- *CPU % mean/peak (per-core)*: Docker's native convention, 100% = one saturated core; values above 100% indicate multi-core usage (e.g., 1711.2% ≈ 17 cores at that instant).
+- *CPU % mean/peak (host-normalized)*: the same values divided by 96 host cores, expressed as a fraction of total host capacity.
+- *Mem mean/peak*: Docker-reported resident memory, averaged and peaked across all samples during the job's lifetime.
 
 ---
 
 ## 4. Pipeline Gate Validation — Success and Failure Test Cases
 
-Full evidence (screenshots, job logs) is maintained separately in [`pipeline-gate-test-cases.md`](./pipeline-gate-test-cases.md).
+Full evidence (screenshots, job logs) is provided in [`pipeline-gate-test-cases.md`](./pipeline-gate-test-cases.md).
 
 Project: `tsp-web` (main branch) / `tsp-deps` (dev branch), self-hosted GitLab (`git-css.tvm.cdac.in`), GitLab Runner 18.6.3.
 
@@ -98,12 +94,12 @@ Project: `tsp-web` (main branch) / `tsp-deps` (dev branch), self-hosted GitLab (
 |---|---|---|---|---|---|
 | 1 | Success — clean build | Commit `321d8297` to `main`, no quality/vuln issues | All stages | validate → sbom-upload → build → docker-publish → scan → deploy → dast-scan all passed; downstream `deploy-trigger: TSP-Deps #9651` fired | Pass |
 | 2 | Failure — SAST violation | Commit to `main` breaching SonarQube quality gate | `sonarqube_analysis` | Job failed within validate stage; `code-quality-and-test`, `generate_bom_csv`, `header_quality_check` passed independently | Blocked as expected |
-| 3 | Vulnerable dependency detection | SBOM uploaded to Dependency-Track on every build | `dependency-track-upload` → Dependency-Track analysis | Upload job passed (HTTP 200); Dependency-Track audit subsequently identified 29 vulnerabilities across `tsp-web` components (2 Critical, 12 High, 13 Medium, 2 Low), incl. `netty-handler` CVE-2026-45416 (High) and `spring-security-web` CVE-2026-47838 (High) | Detection confirmed |
+| 3 | Vulnerable dependency detection | SBOM uploaded to Dependency-Track on every build | `dependency-track-upload` → Dependency-Track analysis | Upload job passed (HTTP 200); Dependency-Track audit subsequently identified 29 vulnerabilities across `tsp-web` components (2 Critical, 12 High, 13 Medium, 2 Low), including `netty-handler` CVE-2026-45416 (High) and `spring-security-web` CVE-2026-47838 (High) | Detection confirmed |
 | 4 | DAST finding | `owasp-zap-full-scan` run against deployed build (commit `321d8297`) | `owasp-zap-full-scan` | Job passed (scan completed, 1m18s); generated ZAP report flagged 1 High-risk alert (CORS Misconfiguration, 4 instances), 3 Low, 2 Informational | Detection confirmed |
 | 5 | Failure — deployment misconfiguration | Commit `8aba95b6` to `dev`, upstream trigger from TSP-Web #9637 | `package-helm` | `package-helm` job failed in package stage; downstream `deploy-dev`, `deploy-release`, `deploy-test` jobs did not execute | Blocked as expected |
 
-**Note on Test Cases 3 and 4:** these validate detection rather than hard pipeline blocking — findings are surfaced in Dependency-Track and the ZAP report for review/triage rather than auto-failing the build, consistent with the project's current gate configuration (severity-threshold enforcement can be added as a follow-on).
+Test Cases 3 and 4 validate detection rather than hard pipeline blocking: findings are surfaced in Dependency-Track and the ZAP report for review and triage rather than auto-failing the build, consistent with the project's current gate configuration.
 
 ---
 
-*Data collected 3–7 July 2026 from live CDAC-TVM self-hosted infrastructure (SonarQube, Dependency-Track, GitLab Runner). Screenshots and raw `docker stats` logs available on request.*
+*Data collected 3–7 July 2026 from live CDAC-TVM self-hosted infrastructure (SonarQube, Dependency-Track, OWASP ZAP, GitLab Runner).*
